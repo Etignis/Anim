@@ -1,0 +1,153 @@
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  color: #555;
+}
+body {
+  margin-left: 0px;
+  margin-top: 0px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  background-color: #222;
+  color: #555;
+  width: 100%;
+  height: 100%;
+  font-size: 16px;
+  overflow: hidden;
+  position: relative;
+  padding-top: 1px;
+}
+img {
+  border: none;
+}
+#corridor {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: perspective(900px);
+  width: 420px;
+  height: 630px;
+  top: -630px;
+  left: -210px;
+  margin-top: 50%;
+  margin-left: 50%;
+}
+#corridor .tx_wall_left {
+  background: linear-gradient(to left, #f0f0ff 0%, #606dbc 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 56px, #465298 59px, #465298 60px), repeating-linear-gradient(90deg, #606dbc, #606dbc 50px, #465298 55px, #465298 60px), #465298;
+  background-position: 0 0;
+  animation: anim_left 0.1s linear infinite normal;
+}
+@keyframes anim_left {
+  100% {
+    background-position: -60px 0;
+  }
+}
+#corridor .tx_wall_right {
+  background: linear-gradient(to right, #f0f0ff 0%, #606dbc 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 56px, #465298 59px, #465298 60px), repeating-linear-gradient(90deg, #606dbc, #606dbc 50px, #465298 55px, #465298 60px), #465298;
+  background-position: 0 0;
+  animation: anim_right 0.1s linear infinite normal;
+}
+@keyframes anim_right {
+  100% {
+    background-position: 60px 0;
+  }
+}
+#corridor .tx_ceiling {
+  background: linear-gradient(to top, #f0f0ff 0%, #f1f4f7 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(90deg, #a6bbc5, #a6bbc5 3px, rgba(255, 255, 255, 0) 4px, rgba(255, 255, 255, 0) 60px), repeating-linear-gradient(0deg, #a6bbc5, #a6bbc5 5px, #f1f4f7 6px, #f1f4f7 60px);
+  background-position: 0 0;
+  animation: anim_ceiling 0.1s linear infinite normal;
+}
+@keyframes anim_ceiling {
+  100% {
+    background-position: 0 -60px;
+  }
+}
+#corridor .tx_floor {
+  background: linear-gradient(to bottom, #f0f0ff 0%, #bbb 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(90deg, #888, #888 3px, rgba(255, 255, 255, 0) 4px, rgba(255, 255, 255, 0) 60px), repeating-linear-gradient(0deg, #888, #888 5px, #bbb 6px, #bbb 60px);
+  background-position: 0 0;
+  animation: anim_floor 0.1s linear infinite normal;
+}
+@keyframes anim_floor {
+  100% {
+    background-position: 0 60px;
+  }
+}
+#corridor .tx_far {
+  background: radial-gradient(at top center, #fff, #dde);
+}
+#corridor .tx_fogg {
+  background: rgba(240, 240, 255, 0.2);
+}
+#corridor .panel {
+  position: absolute;
+}
+#corridor .left {
+  top: 0;
+  left: 0;
+  background: red;
+  width: 6300px;
+  height: 630px;
+  transform-origin: 0 0;
+  transform: rotateY(90deg);
+  background: linear-gradient(to left, #f0f0ff 0%, #606dbc 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 56px, #465298 59px, #465298 60px), repeating-linear-gradient(90deg, #606dbc, #606dbc 50px, #465298 55px, #465298 60px), #465298;
+  background-position: 0 0;
+  animation: anim_left 0.1s linear infinite normal;
+}
+#corridor .right {
+  top: 0;
+  right: 0;
+  background: blue;
+  width: 6300px;
+  height: 630px;
+  transform-origin: 100% 0;
+  transform: rotateY(-90deg);
+  background: linear-gradient(to right, #f0f0ff 0%, #606dbc 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 56px, #465298 59px, #465298 60px), repeating-linear-gradient(90deg, #606dbc, #606dbc 50px, #465298 55px, #465298 60px), #465298;
+  background-position: 0 0;
+  animation: anim_right 0.1s linear infinite normal;
+}
+#corridor .ceiling {
+  top: 0;
+  right: 0;
+  background: green;
+  width: 420px;
+  height: 6300px;
+  transform-origin: 0 0;
+  transform: rotateX(-90deg);
+  background: linear-gradient(to top, #f0f0ff 0%, #f1f4f7 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(90deg, #a6bbc5, #a6bbc5 3px, rgba(255, 255, 255, 0) 4px, rgba(255, 255, 255, 0) 60px), repeating-linear-gradient(0deg, #a6bbc5, #a6bbc5 5px, #f1f4f7 6px, #f1f4f7 60px);
+  background-position: 0 0;
+  animation: anim_ceiling 0.1s linear infinite normal;
+}
+#corridor .floor {
+  bottom: 0;
+  right: 0;
+  background: grey;
+  width: 420px;
+  height: 6300px;
+  transform-origin: 0 100%;
+  transform: rotateX(90deg);
+  background: linear-gradient(to bottom, #f0f0ff 0%, #bbb 70%, rgba(255, 255, 255, 0) 100%), repeating-linear-gradient(90deg, #888, #888 3px, rgba(255, 255, 255, 0) 4px, rgba(255, 255, 255, 0) 60px), repeating-linear-gradient(0deg, #888, #888 5px, #bbb 6px, #bbb 60px);
+  background-position: 0 0;
+  animation: anim_floor 0.1s linear infinite normal;
+}
+#corridor .far {
+  width: 420px;
+  height: 630px;
+  transform: translate3d(0, 0, -5040px);
+  background: radial-gradient(at top center, #fff, #dde);
+}
+#corridor .fogg {
+  width: 420px;
+  height: 630px;
+  background: rgba(240, 240, 255, 0.2);
+}
+#corridor .z1 {
+  transform: translate3d(0, 0, -4830px);
+}
+#corridor .z2 {
+  transform: translate3d(0, 0, -4410px);
+}
+#corridor .z3 {
+  transform: translate3d(0, 0, -4200px);
+}
+
+/*# sourceMappingURL=style.css.map */
