@@ -6,6 +6,8 @@ var default_image = new Image();
 var tr_img01 = new Image();
 var tr_img02 = new Image();
 
+var ter_n_h = 3, ter_n_v = 3;
+
 var pers;
 var ter = [];
 
@@ -182,8 +184,8 @@ function init () {
 		w: 50,
 		h: 50,
 		pos:{
-			x: 150,
-			y: 150
+			x: 25,
+			y: 25
 		}
 	});
 	tr01 = new obj({
@@ -192,9 +194,9 @@ function init () {
 		w: 50,
 		h: 50
 	});
-	for (var i=0; i<10; i++) {
+	for (var i=0; i<ter_n_h; i++) {
 		ter[i] = [];
-		for(var j=0; j<10; j++) {
+		for(var j=0; j<ter_n_v; j++) {
 			ter[i][j] = new obj({
 				img: tr_img01,
 				ctx: ctx,
@@ -204,8 +206,8 @@ function init () {
 				aim_y: 50*j,
 				visible: false,
 				pos:{
-					x: 50*i,
-					y: 50*j
+					x: 50*i + 25,
+					y: 50*j + 25
 				}
 			});
 		}
@@ -222,8 +224,8 @@ function start () {
 }
 function draw() {
 	ctx.clearRect(0, 0, Canvas_Width, Canvas_Height);
-	for (var i=0; i<10; i++) {
-		for(var j=0; j<10; j++) {
+	for (var i=0; i<ter_n_h; i++) {
+		for(var j=0; j<ter_n_v; j++) {
 			if(
 				/**/
 				Math.abs(pers.pos.x-ter[i][j].aim_x) < 61 &&
