@@ -1,11 +1,13 @@
 // CONSTANT
 
-var Canvas_Height, Canvas_Width;
+var Canvas_Height = 300, Canvas_Width = 300;
 var ctx;
 var default_image = new Image();
 var tr_img01 = new Image();
+var tr_img02 = new Image();
 
 var pers;
+var ter = [];
 
 var GAME_ON = true;
 var lastAnimationFrameTime,deltaTime, last_time, spf, max_deltaTime, min_deltaTime,lastFpsUpdateTime;
@@ -13,8 +15,10 @@ var lastAnimationFrameTime,deltaTime, last_time, spf, max_deltaTime, min_deltaTi
 
 // Objects
 function obj (p) {
-	this.w = 0; // width
-	this.h = 0; // height
+	this.w = 50; // width
+	this.h = 50; // height
+	this.aim_x = null;
+	this.aim_y = null;
 	this.pos = {
 		x: 0,
 		y: 0,
@@ -28,6 +32,7 @@ function obj (p) {
 	}
 	this.img = new Image ();
 	this.ctx;
+	this.visible = true;
 
 	if(p) {
 		if(p.img){
@@ -35,6 +40,19 @@ function obj (p) {
 		}
 		if(p.ctx){
 			this.ctx=p.ctx;
+		}
+		if(p.aim_x){
+			this.aim_x=p.aim_x;
+		}
+		if(p.aim_y){
+			this.aim_y=p.aim_y;
+		}
+		if(p.pos){
+			this.pos.x=p.pos.x;
+			this.pos.y=p.pos.y;
+		}
+		if(p.visible != undefined){
+			this.visible=p.visible;
 		}
 	}
 };
@@ -44,11 +62,10 @@ obj.prototype.draw = function(p) {
 	p.repeat_x
 	p.repeat_y
 	*/
-
-	var w = this.img.width;
-	var h = this.img.height;
-	var x = this.pos.x;
-	var y = this.pos.y;
+	var w = this.w?this.w:this.img.width;
+	var h = this.h?this.h:this.img.height;
+	var x = this.pos.x - this.w/2;
+	var y = this.pos.y - this.h/2;
 	var r_x = 1;
 	var r_y = 1;
 
@@ -59,8 +76,7 @@ obj.prototype.draw = function(p) {
 		if(p.repeat_y != undefined)
 			r_y = p.repeat_y;
 	}
-	if(this.ctx && this.img) {
-
+	if(this.ctx && this.img && this.visible) {
 		for (var i = 0; i<r_x; i++ ) {
 			for (var j = 0; j<r_y; j++ ) {
 				this.ctx.drawImage(this.img, x + w*i, y + h*j, w, h);
@@ -78,6 +94,26 @@ obj.prototype.move = function(dir) {
 		break;
 		case "left": this.pos.x = this.pos.x - this.defaultSpeed
 		break;
+	}
+};
+obj.prototype.moveToAim = function() {
+	if(this.aim_x) {
+		var delta_x = this.pos.x - this.aim_x;
+		if(Math.abs(delta_x)<this.defaultSpeed) {
+			this.pos.x = this.aim_x;
+			this.aim_x = null;
+		} else {
+			this.pos.x = delta_x>0? this.pos.x-this.defaultSpeed : +this.pos.x+ +this.defaultSpeed;
+		}
+	}
+	if(this.aim_y) {
+		var delta_y = this.pos.y - this.aim_y;
+		if(Math.abs(delta_y)<this.defaultSpeed) {
+			this.pos.y = this.aim_y;
+			this.aim_y = null;
+		} else {
+			this.pos.y = delta_y>0? this.pos.y-this.defaultSpeed : +this.pos.y+ +this.defaultSpeed;
+		}
 	}
 };
 
@@ -112,7 +148,7 @@ function create_gamezone() {
 }
 function create_canvas() {
 	//alert(Window_Width+'x'+Window_Height);
-	$('#game_zone').append("<canvas id='c_bg' width='"+300+"' height='"+300+"'>Your browser does not support HTML5 Canvas.</canvas>");
+	$('#game_zone').append("<canvas id='c_bg' width='"+Canvas_Height+"' height='"+Canvas_Width+"'>Your browser does not support HTML5 Canvas.</canvas>");
 	c_bg = document.getElementById('c_bg');
 	Canvas_Height      = $('#c_bg').height();
 	Canvas_Width       = $('#c_bg').width();
@@ -123,6 +159,7 @@ function create_canvas() {
 function load_resources () {
 	default_image.src='img/defaut.jpg';
 	tr_img01.src='img/tr01.jpg';
+	tr_img02.src='img/tr02.jpg';
 
 	$.when(
 		default_image.onload,
@@ -141,12 +178,38 @@ function draw_el (el) {
 function init () {
 	pers = new obj({
 		img: default_image,
-		ctx: ctx
+		ctx: ctx,
+		w: 50,
+		h: 50,
+		pos:{
+			x: 150,
+			y: 150
+		}
 	});
 	tr01 = new obj({
 		img: tr_img01,
-		ctx: ctx
+		ctx: ctx,
+		w: 50,
+		h: 50
 	});
+	for (var i=0; i<10; i++) {
+		ter[i] = [];
+		for(var j=0; j<10; j++) {
+			ter[i][j] = new obj({
+				img: tr_img01,
+				ctx: ctx,
+				w: 50,
+				h: 50,
+				aim_x: 50*i,
+				aim_y: 50*j,
+				visible: false,
+				pos:{
+					x: 50*i,
+					y: 50*j
+				}
+			});
+		}
+	}
 	//pers.img = default_image;
 	//pers.ctx = ctx;
 }
@@ -158,8 +221,23 @@ function start () {
 	draw();
 }
 function draw() {
-	//draw_el(pers);
-	tr01.draw({repeat_x:5, repeat_y:5});
+	ctx.clearRect(0, 0, Canvas_Width, Canvas_Height);
+	for (var i=0; i<10; i++) {
+		for(var j=0; j<10; j++) {
+			if(
+				/**/
+				Math.abs(pers.pos.x-ter[i][j].aim_x) < 61 &&
+				Math.abs(pers.pos.y-ter[i][j].aim_y) < 61
+				/**/
+				) {
+
+				//ter[i][j].moveToAim();
+				ter[i][j].visible = true;
+				}
+		ter[i][j].draw();
+		}
+	}
+	//tr01.draw({repeat_x:5, repeat_y:5});
 	pers.draw();
 }
 
@@ -171,37 +249,67 @@ function act() {
 	console.log(calculateFps(now));
 	draw();
 }
+function game_pause()
+ {
+	GAME_ON=false;
+	ctx.filter = "grayscale(100%)";
+	//$('#game_menu').show();
+ }
+ function game_continue()
+ {
+	//$('#game_menu').hide();
+	now = new Date();
+	//lastAnimationFrameTime = now;
+	//lastFpsUpdateTime = now;
+	last_time = now;
+	GAME_ON=true;
+	ctx.filter = "none";
+	act();
+ }
 
 //
 $(document).ready(function(){
 	load_resources();
 	act();
 
+	// keybord
 	$('body').keydown(function(e){
 	//alert(e.which);
-	switch(e.which){
-		case 83:				//down
-			pers.move("down");
-			break;
-		case 87:				//up
-			pers.move("up");
-			break;
-		case 65:				//left
-			pers.move("left");
-			//hero.view=1;
-			break;
-		case 68:				//right
-			pers.move("right");
-			//hero.view=0;
-			break;
-		case 27:           // ESC
-			if(GAME_ON)
-			 GAME_ON=false;
-			else
-			 GAME_ON=true;
-		default:
-			pers.speed.x=0;
-			pers.speed.y=0;
+	if (GAME_ON) {
+		switch(e.which){
+			case 83:				//down
+				pers.move("down");
+				break;
+			case 87:				//up
+				pers.move("up");
+				break;
+			case 65:				//left
+				pers.move("left");
+				//hero.view=1;
+				break;
+			case 68:				//right
+				pers.move("right");
+				//hero.view=0;
+				break;
+			case 27:
+			 		game_pause();
+			default:
+				pers.speed.x=0;
+				pers.speed.y=0;
+		}
+	} else if (e.which==27) {
+			 		game_continue();
 	}
  });
+
+	// click
+	$("#c_bg").click(function(e) {
+	  var offset = $(this).offset();
+	  var relativeX = (e.pageX - offset.left);
+	  var relativeY = (e.pageY - offset.top);
+
+	  //alert("X: " + relativeX + "  Y: " + relativeY);
+	  console.log("X: " + relativeX + "  Y: " + relativeY);
+	});
+
 });
