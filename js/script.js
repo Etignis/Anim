@@ -6,7 +6,7 @@ var default_image = new Image();
 var tr_img01 = new Image();
 var tr_img02 = new Image();
 
-var ter_n_h = 3, ter_n_v = 3;
+var ter_n_h = 10, ter_n_v = 10;
 
 var pers;
 var ter = [];
@@ -233,7 +233,7 @@ function draw() {
 				/**/
 				) {
 
-				//ter[i][j].moveToAim();
+				ter[i][j].moveToAim();
 				ter[i][j].visible = true;
 				}
 		ter[i][j].draw();
