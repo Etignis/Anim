@@ -1,20 +1,24 @@
 "use strict";
 // CONSTANT
+var G_SQ = 64; // global square size
 
-var Canvas_Height = 300, Canvas_Width = 300;
+var ter_n_h = 10, ter_n_v = 10;
+var Canvas_Height = ter_n_v*G_SQ, Canvas_Width = ter_n_h*G_SQ;
 var ctx;
 var default_image = new Image();
 var tr_img01 = new Image();
 var tr_img02 = new Image();
+
+var grass01 = new Image();
+var select01 = new Image();
+var highlight = new Image();
 var c_bg;
 
-var ter_n_h = 10, ter_n_v = 10;
 
 var pers, tr01, tr02;
 var ter = [];
 
 var GAME_ON = true;
-var G_SQ = 50; // global square size
 var lastAnimationFrameTime,deltaTime, last_time, spf, max_deltaTime, min_deltaTime,lastFpsUpdateTime=0, fps;
 
 
@@ -26,6 +30,7 @@ class o {
 		this.h = p.h?p.h:G_SQ;
 		this.img=p.img? p.img:null;
 		this.ctx=p.ctx? p.ctx:null;
+		this.stat = p.stat? p.stat : "normal";
 
 		this.aim_x=p.aim_x?p.aim_x:null;
 		this.aim_y=p.aim_y?p.aim_y:null;
@@ -54,6 +59,13 @@ class o {
 			this.opacity = 1;
 		}
   }
+
+	/*
+	set stat(value) {
+		console.log(value);	
+		console.log(this.stat);		
+	}
+	*/
 	draw(p) {
 		var w = this.w?this.w:this.img.width;
 		var h = this.h?this.h:this.img.height;
@@ -61,6 +73,8 @@ class o {
 		var y = this.pos.y - this.h/2;
 		var r_x = 1;
 		var r_y = 1;
+		
+		var IMG = this.img;
 
 		if(p) {
 			this.ctx = p.ctx? p.ctx: this.ctx;
@@ -68,8 +82,10 @@ class o {
 				r_x = p.repeat_x;
 			if(p.repeat_y != undefined)
 				r_y = p.repeat_y;
+			if(p.img)
+				IMG = p.img;
 		}
-		if(this.ctx && this.img && this.visible) {
+		if(this.ctx && IMG && this.visible) {
 			for (var i = 0; i<r_x; i++ ) {
 				for (var j = 0; j<r_y; j++ ) {
 					if (this.opacity < 1) {
@@ -77,7 +93,10 @@ class o {
 					} else {
 						ctx.globalAlpha = 1;
 					}
-					this.ctx.drawImage(this.img, x + w*i, y + h*j, w, h);
+					this.ctx.drawImage(IMG, x + w*i, y + h*j, w, h);
+					if (this.stat == "highlight") {
+						this.ctx.drawImage(highlight, x + w*i, y + h*j, w, h);						
+					}
 				}
 			}
 		}
@@ -210,6 +229,10 @@ function load_resources () {
 	default_image.src='img/defaut.jpg';
 	tr_img01.src='img/tr01.jpg';
 	tr_img02.src='img/tr02.jpg';
+	
+	grass01.src='img/grass01.jpg';
+	select01.src='img/select01.jpg';
+	highlight.src='img/highlight.png';
 
 	$.when(
 		default_image.onload,
@@ -250,7 +273,7 @@ function init () {
 		ter[i] = [];
 		for(var j=0; j<ter_n_v; j++) {
 			ter[i][j] = new terrSq({
-				img: tr_img01,
+				img: grass01,
 				ctx: ctx,
 				w: G_SQ,
 				h: G_SQ,
@@ -266,10 +289,10 @@ function init () {
 					x: i,
 					y: j
 				},
-				type: "normal",
+				stat: "normal",
 				images: {
-					normal: tr_img01,
-					highlight: tr_img02
+					normal: grass01,
+					highlight: highlight
 				}
 			});
 		}
@@ -298,10 +321,10 @@ function draw() {
 
 				//ter[i][j].moveToAim();
 				ter[i][j].fadeIn();
-				ter[i][j].type = "highlight";
+				ter[i][j].stat = "highlight";
 				//ter[i][j].visible = true;
 				} else {
-					ter[i][j].type = "normal";
+					ter[i][j].stat = "normal";
 				}
 		ter[i][j].draw();
 		}
