@@ -1,3 +1,4 @@
+"use strict";
 // CONSTANT
 
 var Canvas_Height = 300, Canvas_Width = 300;
@@ -5,120 +6,159 @@ var ctx;
 var default_image = new Image();
 var tr_img01 = new Image();
 var tr_img02 = new Image();
+var c_bg;
 
 var ter_n_h = 10, ter_n_v = 10;
 
-var pers;
+var pers, tr01, tr02;
 var ter = [];
 
 var GAME_ON = true;
-var lastAnimationFrameTime,deltaTime, last_time, spf, max_deltaTime, min_deltaTime,lastFpsUpdateTime;
+var G_SQ = 50; // global square size
+var lastAnimationFrameTime,deltaTime, last_time, spf, max_deltaTime, min_deltaTime,lastFpsUpdateTime=0, fps;
 
 
 // Objects
-function obj (p) {
-	this.w = 50; // width
-	this.h = 50; // height
-	this.aim_x = null;
-	this.aim_y = null;
-	this.pos = {
-		x: 0,
-		y: 0,
-		z: 0
-	}
-	this.defaultSpeed = 10;
-	this.speed = {
-		x: 0,
-		y: 0,
-		z: 0
-	}
-	this.img = new Image ();
-	this.ctx;
-	this.visible = true;
+class o {
+	constructor(p) {
+		this.id = p.id?p.id:null;
+		this.w = p.w?p.w:G_SQ;
+		this.h = p.h?p.h:G_SQ;
+		this.img=p.img? p.img:null;
+		this.ctx=p.ctx? p.ctx:null;
 
-	if(p) {
-		if(p.img){
-			this.img=p.img;
+		this.aim_x=p.aim_x?p.aim_x:null;
+		this.aim_y=p.aim_y?p.aim_y:null;
+
+		this.defaultSpeed = p.defaultSpeed?p.defaultSpeed:10;
+		this.pos = {
+			x: p.pos?p.pos.x?p.pos.x:0:0,
+			y: p.pos?p.pos.y?p.pos.y:0:0,
+			z: p.pos?p.pos.z?p.pos.z:0:0
 		}
-		if(p.ctx){
-			this.ctx=p.ctx;
+
+		this.coord = {
+			x: p.coord?p.coord.x?p.coord.x:0:0,
+			y: p.coord?p.coord.y?p.coord.y:0:0,
+			z: p.coord?p.coord.z?p.coord.z:0:0
 		}
-		if(p.aim_x){
-			this.aim_x=p.aim_x;
-		}
-		if(p.aim_y){
-			this.aim_y=p.aim_y;
-		}
-		if(p.pos){
-			this.pos.x=p.pos.x;
-			this.pos.y=p.pos.y;
-		}
+
 		if(p.visible != undefined){
 			this.visible=p.visible;
+		} else {
+			this.visible = true;
 		}
-	}
-};
-obj.prototype.draw = function(p) {
-	/*
-	p.ctx
-	p.repeat_x
-	p.repeat_y
-	*/
-	var w = this.w?this.w:this.img.width;
-	var h = this.h?this.h:this.img.height;
-	var x = this.pos.x - this.w/2;
-	var y = this.pos.y - this.h/2;
-	var r_x = 1;
-	var r_y = 1;
+		if(p.opasity >=0 || p.opacity<=1){
+			this.opacity=p.opacity;
+		} else {
+			this.opacity = 1;
+		}
+  }
+	draw(p) {
+		var w = this.w?this.w:this.img.width;
+		var h = this.h?this.h:this.img.height;
+		var x = this.pos.x - this.w/2;
+		var y = this.pos.y - this.h/2;
+		var r_x = 1;
+		var r_y = 1;
 
-	if(p) {
-		this.ctx = p.ctx? p.ctx: this.ctx;
-		if(p.repeat_x != undefined)
-			r_x = p.repeat_x;
-		if(p.repeat_y != undefined)
-			r_y = p.repeat_y;
-	}
-	if(this.ctx && this.img && this.visible) {
-		for (var i = 0; i<r_x; i++ ) {
-			for (var j = 0; j<r_y; j++ ) {
-				this.ctx.drawImage(this.img, x + w*i, y + h*j, w, h);
+		if(p) {
+			this.ctx = p.ctx? p.ctx: this.ctx;
+			if(p.repeat_x != undefined)
+				r_x = p.repeat_x;
+			if(p.repeat_y != undefined)
+				r_y = p.repeat_y;
+		}
+		if(this.ctx && this.img && this.visible) {
+			for (var i = 0; i<r_x; i++ ) {
+				for (var j = 0; j<r_y; j++ ) {
+					if (this.opacity < 1) {
+						ctx.globalAlpha = this.opacity;
+					} else {
+						ctx.globalAlpha = 1;
+					}
+					this.ctx.drawImage(this.img, x + w*i, y + h*j, w, h);
+				}
 			}
 		}
 	}
-};
-obj.prototype.move = function(dir) {
-	switch(dir) {
-		case "up": this.pos.y = this.pos.y - this.defaultSpeed
-		break;
-		case "right": this.pos.x = +this.pos.x + +this.defaultSpeed
-		break;
-		case "down": this.pos.y = +this.pos.y + +this.defaultSpeed
-		break;
-		case "left": this.pos.x = this.pos.x - this.defaultSpeed
-		break;
+	move(dir) {
+		switch(dir) {
+			case "up": this.pos.y = this.pos.y - this.defaultSpeed;
+			break;
+			case "right": this.pos.x = +this.pos.x + +this.defaultSpeed
+			break;
+			case "down": this.pos.y = +this.pos.y + +this.defaultSpeed
+			break;
+			case "left": this.pos.x = this.pos.x - this.defaultSpeed
+			break;
+		}
+
+		this.coord.x = Math.floor(this.pos.x/this.w);
+		this.coord.y = Math.floor(this.pos.y/this.h);
 	}
-};
-obj.prototype.moveToAim = function() {
-	if(this.aim_x) {
-		var delta_x = this.pos.x - this.aim_x;
-		if(Math.abs(delta_x)<this.defaultSpeed) {
-			this.pos.x = this.aim_x;
-			this.aim_x = null;
-		} else {
-			this.pos.x = delta_x>0? this.pos.x-this.defaultSpeed : +this.pos.x+ +this.defaultSpeed;
+	moveTo(gridX, gridY) {
+
+	}
+	fadeIn() {
+		if(this.opacity < 1 && !this.timerFadeIn) {
+			var that = this;
+			this.timerFadeIn = setInterval(
+				function() {
+					var delta = 1 - that.opacity;
+					if(Math.abs(delta) > 0) {
+						that.opacity = that.opacity + 0.05;
+						that.aim_x = null;
+					} else {
+						that.opacity = 1;
+						clearInterval(that.timerFadeIn);
+					}
+				},
+				10
+				);
 		}
 	}
-	if(this.aim_y) {
-		var delta_y = this.pos.y - this.aim_y;
-		if(Math.abs(delta_y)<this.defaultSpeed) {
-			this.pos.y = this.aim_y;
-			this.aim_y = null;
-		} else {
-			this.pos.y = delta_y>0? this.pos.y-this.defaultSpeed : +this.pos.y+ +this.defaultSpeed;
+	moveToAim() {
+		if(this.aim_x) {
+			var delta_x = this.pos.x - this.aim_x;
+			if(Math.abs(delta_x)<this.defaultSpeed) {
+				this.pos.x = this.aim_x;
+				this.aim_x = null;
+			} else {
+				this.pos.x = delta_x>0? this.pos.x-this.defaultSpeed : +this.pos.x+ +this.defaultSpeed;
+			}
 		}
-	}
+		if(this.aim_y) {
+			var delta_y = this.pos.y - this.aim_y;
+			if(Math.abs(delta_y)<this.defaultSpeed) {
+				this.pos.y = this.aim_y;
+				this.aim_y = null;
+			} else {
+				this.pos.y = delta_y>0? this.pos.y-this.defaultSpeed : +this.pos.y+ +this.defaultSpeed;
+			}
+		}
+	};
 };
 
+class terrSq extends o {
+	constructor(p) {
+		super(p);
+		//console.log(p.type);
+		this.type = p.type?p.type:0;
+		this.images = p.images?p.images:{};
+	}
+	set type(value) {
+		//console.log(value);
+		try{
+			this.img = this.images[value];
+		}
+		catch (err) {}
+	}
+	draw(p) {
+		//super(p);
+		super.draw(p);
+	}
+}
 // FUNCTIONS
 
 function calculateFps(now) {
@@ -137,14 +177,22 @@ function calculateFps(now) {
 
 	if ((now - lastFpsUpdateTime)>1000) {
 		lastFpsUpdateTime = now;
+
 		//fpsElement.innerHTML = fps.toFixed(0) + ' fps';
 		//show_vars();
 	}
 
 	last_time = now;
-	return fps.toFixed(0);
-}
 
+
+		fps = fps.toFixed(0);
+	return fps;
+}
+function drawFPS (fps){
+		ctx.strokeStyle = "#444";
+		ctx.font = "12px Arial";
+		ctx.fillText("FPS: "+fps,5,10);
+}
 function create_gamezone() {
 	$("body").html("<div id='game_zone'></div>");
 }
@@ -178,36 +226,50 @@ function draw_el (el) {
 
 // initialise al for game
 function init () {
-	pers = new obj({
+	pers = new o({
 		img: default_image,
 		ctx: ctx,
-		w: 50,
-		h: 50,
+		w: G_SQ,
+		h: G_SQ,
 		pos:{
 			x: 25,
-			y: 25
-		}
+			y: 25,
+			z: 0
+		},
+		id: "pers"
 	});
-	tr01 = new obj({
+	/*
+	tr01 = new terrSq({
 		img: tr_img01,
 		ctx: ctx,
-		w: 50,
-		h: 50
+		w: G_SQ,
+		h: G_SQ
 	});
+	*/
 	for (var i=0; i<ter_n_h; i++) {
 		ter[i] = [];
 		for(var j=0; j<ter_n_v; j++) {
-			ter[i][j] = new obj({
+			ter[i][j] = new terrSq({
 				img: tr_img01,
 				ctx: ctx,
-				w: 50,
-				h: 50,
-				aim_x: 50*i,
-				aim_y: 50*j,
-				visible: false,
+				w: G_SQ,
+				h: G_SQ,
+				aim_x: G_SQ*i,
+				aim_y: G_SQ*j,
+				visible: true,
+				opacity: 0,
 				pos:{
-					x: 50*i + 25,
-					y: 50*j + 25
+					x: G_SQ*i + 25,
+					y: G_SQ*j + 25
+				},
+				coord:{
+					x: i,
+					y: j
+				},
+				type: "normal",
+				images: {
+					normal: tr_img01,
+					highlight: tr_img02
 				}
 			});
 		}
@@ -215,7 +277,6 @@ function init () {
 	//pers.img = default_image;
 	//pers.ctx = ctx;
 }
-
 function start () {
 	create_gamezone();
 	create_canvas();
@@ -227,27 +288,34 @@ function draw() {
 	for (var i=0; i<ter_n_h; i++) {
 		for(var j=0; j<ter_n_v; j++) {
 			if(
-				/**/
+				/*/
 				Math.abs(pers.pos.x-ter[i][j].aim_x) < 61 &&
 				Math.abs(pers.pos.y-ter[i][j].aim_y) < 61
 				/**/
+				Math.abs(pers.coord.x-ter[i][j].coord.x) <= 1 &&
+				Math.abs(pers.coord.y-ter[i][j].coord.y) <= 1
 				) {
 
-				ter[i][j].moveToAim();
-				ter[i][j].visible = true;
+				//ter[i][j].moveToAim();
+				ter[i][j].fadeIn();
+				ter[i][j].type = "highlight";
+				//ter[i][j].visible = true;
+				} else {
+					ter[i][j].type = "normal";
 				}
 		ter[i][j].draw();
 		}
 	}
 	//tr01.draw({repeat_x:5, repeat_y:5});
 	pers.draw();
+	drawFPS(fps);
 }
 
 function act() {
 	if(GAME_ON) {
 		requestAnimationFrame(act);
 	}
-	now = new Date();
+	var now = new Date();
 	console.log(calculateFps(now));
 	draw();
 }
@@ -260,9 +328,9 @@ function game_pause()
  function game_continue()
  {
 	//$('#game_menu').hide();
-	now = new Date();
+	var now = new Date();
 	//lastAnimationFrameTime = now;
-	//lastFpsUpdateTime = now;
+	lastFpsUpdateTime = now;
 	last_time = now;
 	GAME_ON=true;
 	ctx.filter = "none";
@@ -276,32 +344,32 @@ $(document).ready(function(){
 
 	// keybord
 	$('body').keydown(function(e){
-	//alert(e.which);
-	if (GAME_ON) {
-		switch(e.which){
-			case 83:				//down
-				pers.move("down");
-				break;
-			case 87:				//up
-				pers.move("up");
-				break;
-			case 65:				//left
-				pers.move("left");
-				//hero.view=1;
-				break;
-			case 68:				//right
-				pers.move("right");
-				//hero.view=0;
-				break;
-			case 27:
-			 		game_pause();
-			default:
-				pers.speed.x=0;
-				pers.speed.y=0;
+		//alert(e.which);
+		if (GAME_ON) {
+			switch(e.which){
+				case 83:				//down
+					pers.move("down");
+					break;
+				case 87:				//up
+					pers.move("up");
+					break;
+				case 65:				//left
+					pers.move("left");
+					//hero.view=1;
+					break;
+				case 68:				//right
+					pers.move("right");
+					//hero.view=0;
+					break;
+				case 27:
+				 		game_pause();
+				default:
+					//pers.speed.x=0;
+					//pers.speed.y=0;
+			}
+		} else if (e.which==27) {
+				 		game_continue();
 		}
-	} else if (e.which==27) {
-			 		game_continue();
-	}
  });
 
 	// click
@@ -311,7 +379,10 @@ $(document).ready(function(){
 	  var relativeY = (e.pageY - offset.top);
 
 	  //alert("X: " + relativeX + "  Y: " + relativeY);
-	  console.log("X: " + relativeX + "  Y: " + relativeY);
+	  var X = Math.floor(relativeX/G_SQ);
+	  var Y = Math.floor(relativeY/G_SQ);
+	  console.log("X: " + X + "  Y: " + Y);
 	});
+
 
 });
