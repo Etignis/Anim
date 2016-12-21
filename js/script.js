@@ -1,15 +1,24 @@
 "use strict";
 // CONSTANT
 var G_SQ = 64; // global square size
+var map;
 
 var ter_n_h = 10, ter_n_v = 10;
 var Canvas_Height = ter_n_v*G_SQ, Canvas_Width = ter_n_h*G_SQ;
 var ctx;
+var terSelected = {
+	X: -1,
+	Y: -1
+}
+var terEnabled = true;
+
 var default_image = new Image();
 var tr_img01 = new Image();
 var tr_img02 = new Image();
 
 var grass01 = new Image();
+var stone01 = new Image();
+var dirt01 = new Image();
 var select01 = new Image();
 var highlight = new Image();
 var c_bg;
@@ -58,12 +67,66 @@ class o {
 		} else {
 			this.opacity = 1;
 		}
-  }
+  } /// constructor
 
+  setCoord(p){
+  	if(p.x!=undefined) {
+  		this.coord.x=p.x;
+  	}
+  	if(p.y!=undefined) {
+  		this.coord.y=p.y;
+  	}
+  	if(p.z!=undefined) {
+  		this.coord.z=p.z;
+  	}
+  	this.replaceByCoord();
+  }
+  moveToCoord(p){
+  	if(p.x!=undefined) {
+  		this.coord.x=p.x;
+  	}
+  	if(p.y!=undefined) {
+  		this.coord.y=p.y;
+  	}
+  	if(p.z!=undefined) {
+  		this.coord.z=p.z;
+  	}
+  //	this.replaceByCoord();
+
+
+		var that = this;
+		this.timermoveToCoord = new Promise(function(res,rej) {
+			setInterval(
+				function() {
+					var rX = that.pos.x;
+					var rY = that.pos.y;
+					var aX = that.coord.x*that.w + that.w/2;
+					var aY = that.coord.y*that.h + that.h/2;
+					var deltaX = aX - rX;
+					var deltaY = aY - rY;
+					if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+						if(Math.abs(deltaX) > 5) {
+							that.pos.x = +that.pos.x + +getSign(deltaX)*that.defaultSpeed;
+						}
+						if (Math.abs(deltaY) > 5) {
+							that.pos.y = +that.pos.y + +getSign(deltaY)*that.defaultSpeed;
+						}
+					} else {
+						that.replaceByCoord();
+						terEnabled = true;
+						res();
+						clearInterval(that.timermoveToCoord);
+					}
+				},
+			10
+			);
+		});
+		this.timermoveToCoord.then(function(){});
+  }
 	/*
 	set stat(value) {
-		console.log(value);	
-		console.log(this.stat);		
+		console.log(value);
+		console.log(this.stat);
 	}
 	*/
 	draw(p) {
@@ -73,7 +136,7 @@ class o {
 		var y = this.pos.y - this.h/2;
 		var r_x = 1;
 		var r_y = 1;
-		
+
 		var IMG = this.img;
 
 		if(p) {
@@ -94,12 +157,13 @@ class o {
 						ctx.globalAlpha = 1;
 					}
 					this.ctx.drawImage(IMG, x + w*i, y + h*j, w, h);
-					if (this.stat == "highlight") {
-						this.ctx.drawImage(highlight, x + w*i, y + h*j, w, h);						
-					}
 				}
 			}
 		}
+	}
+	replaceByCoord(){
+		this.pos.x = this.coord.x*this.w + this.w/2;
+		this.pos.y = this.coord.y*this.h + this.h/2;
 	}
 	move(dir) {
 		switch(dir) {
@@ -163,23 +227,233 @@ class terrSq extends o {
 	constructor(p) {
 		super(p);
 		//console.log(p.type);
+		this.fPassability = (p.fPassability!=undefined)?p.fPassability:1;
 		this.type = p.type?p.type:0;
 		this.images = p.images?p.images:{};
 	}
-	set type(value) {
-		//console.log(value);
-		try{
-			this.img = this.images[value];
-		}
-		catch (err) {}
-	}
+
 	draw(p) {
 		//super(p);
-		super.draw(p);
+		super.draw({img: this.images[this.type]});
+		if (this.fHighlight && this.fPassability>0) {
+			super.draw({img: highlight});
+		}
+		if (this.coord.x == terSelected.X &&  this.coord.y == terSelected.Y && this.fHighlight>0) {
+			super.draw({img: select01});
+		}
+	}
+}
+class actor extends o {
+	constructor(p) {
+		super(p);
+	}
+
+	findPath(p1,p2) {
+		var NULL = 9;
+		function setCoast(x,y,coast) {
+			var ret = false;
+			var passable=-1;
+			try {
+				if(a[x][y].passable && a[x][y].coast!=NULL){
+					var coast = a[x][y].coast;
+					console.log("try p "+x+" "+y +" "+coast);
+					coast++;
+
+					try {
+						var tx=x;
+						var ty=y-1;
+						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
+							a[ty][tx].coast = coast;
+						console.log("top "+tx+" "+ty+" "+coast);
+						printA();
+						if (a[ty][tx].stat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+					try {
+						var tx=x;
+						var ty=+y+ +1;
+						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
+							a[ty][tx].coast = coast;
+						console.log("bot "+tx+" "+ty+" "+coast);
+						printA();
+						if (a[ty][tx].stat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+					try {
+						var tx=x-1;
+						var ty=y;
+						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
+							a[ty][tx].coast = coast;
+						console.log("left "+tx+" "+ty+" "+coast);
+						printA();
+						if (a[ty][tx].stat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+					try {
+						var tx=+x+ +1;
+						var ty=y;
+						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
+							a[ty][tx].coast = coast;
+						console.log("right "+tx+" "+ty+" "+coast);
+						printA();
+						if (a[ty][tx].stat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+				}
+			} catch(err) {}
+
+			return ret;
+		}
+
+		var a = []; // create empty aray for coasts
+		for (var i=0; i<ter_n_h; i++) {
+			a[i] = []
+			for (var j=0; j<ter_n_v; j++) {
+				a[i][j]= {
+					passable: ter[i][j].fPassability,
+					coast: NULL
+				}
+				if (p1.x == i && p1.y == j) {
+					a[i][j].stat="start"
+					a[i][j].coast=0;
+				}
+				if (p2.x == i && p2.y == j) {
+					a[i][j].stat="end";
+				}
+			}
+		}
+		printA();
+
+		var coast=0;
+		var fCont = true;
+		var i, j;
+		a[p1.x][p1.y].coast=0;
+
+		function collectCoordinatesFromLine(start, end) {
+		  var directionType = start.x === end.x ? "vertical" : "horizontal";
+		  var directionIncrement = directionType === "vertical" ? (start.y > end.y ? -1 : 1) : (start.x > end.x ? -1 : 1);
+		  var lineLength = directionType === "vertical" ? Math.abs(start.y - end.y) : Math.abs(start.x - end.x);
+		  var coordinates = [];
+		  var increment = directionIncrement;
+
+		  for (var i = 0; i < lineLength; i++) {
+		    var x = directionType === "vertical" ? start.x : start.x + increment;
+		    var y = directionType === "vertical" ? start.y + increment : start.y;
+
+		    coordinates.push({x: x, y: y});
+
+		    increment += directionIncrement;
+		  }
+
+		  return coordinates;
+		}
+
+		function gatherCoordinatesFromPerimeter(center, radius) {
+		  var currentPosition = {
+		    x: center.x + radius,
+		    y: center.y + radius
+		  };
+		  var coordinates = [];
+
+		  for (var side = 1; side <= 4; side++) {
+		    var multiplier = side <= 2 ? -1 : 1;
+		    var x = currentPosition.x + multiplier * 2 * radius * (side % 2);
+		    var y = currentPosition.y + multiplier * 2 * radius * ((side + 1) % 2);
+		    coordinates = coordinates.concat(collectCoordinatesFromLine(currentPosition, {x: x, y: y}));
+		    currentPosition = {x: x, y: y};
+		  }
+
+		  return coordinates;
+		}
+		for (var t=0; t<4 && fCont; t++) {
+			var ring = gatherCoordinatesFromPerimeter({x: p1.x, y:p1.y}, t);
+			if(t==0)
+				ring = [{x:p1.x, y:p1.y}];
+			for( var i=0; i<ring.length && fCont; i++) {
+				if( setCoast(ring[i].x, ring[i].y) ){
+							fCont=false;
+							console.log("finish found");
+						}
+			}
+		}
+
+		function printA() {
+			for(var q1=0; q1<a.length; q1++) {
+				var str="";
+				for(var q2=0; q2<a[0].length; q2++) {
+					str+= " "+a[q1][q2].coast;
+				}
+				console.log(str);
+			}
+		}
+		//printA();
+
+		function getNextPoint(x,y, coast) {
+			try{
+				if(a[x][y-1].coast<coast) {
+					return {x: x, y: y-1};
+				}
+			} catch (err) {}
+			try{
+				if(a[x][y+1].coast<coast) {
+					return {x: x, y: +y+ +1};
+				}
+			} catch (err) {}
+			try{
+				if(a[x-1][y].coast<coast) {
+					return {x: x-1, y: y};
+				}
+			} catch (err) {}
+			try{
+				if(a[x+1][y].coast<coast) {
+					return {x: +x+ +1, y: y};
+				}
+			} catch (err) {}
+			return false;
+		}
+		var path = [{x:p2.x, y:p2.y}]; // create path
+		var p;
+
+		coast = a[p2.x][p2.y].coast;
+		var step=9;
+		do{
+			p = getNextPoint(path[path.length-1].x,path[path.length-1].y, coast);
+			if(p) {
+				path.push(p);
+				coast = a[path[path.length-1].x][path[path.length-1].y].coast;
+			}
+			step--;
+		} while (coast>0 && step>0)
+
+		console.dir(path);
+
+		/**/
+		for(var i=0; path[i]; i++) {
+			//ter[path[i].x][path[i].y].type="grass";
+
+		}
+		/**/
+		this.path=path;
+
+	}
+	makePath(p){
+		if (p!=undefined && p.length>0) {
+			this.pathPoints = p;
+		}
 	}
 }
 // FUNCTIONS
-
+function getSign(num) {
+	return num>0? 1 : num<0? -1: 0;
+}
 function calculateFps(now) {
 	fps = 1000 / (now - lastAnimationFrameTime);
 	lastAnimationFrameTime = now;
@@ -223,15 +497,21 @@ function create_canvas() {
 	Canvas_Width       = $('#c_bg').width();
 	ctx = c_bg.getContext('2d');
 }
+function resize_canvas() {
+	$("#c_bg").attr("width", Canvas_Width);
+	$("#c_bg").attr("height", Canvas_Height);
+}
 
 // load game resources // images
 function load_resources () {
 	default_image.src='img/defaut.jpg';
 	tr_img01.src='img/tr01.jpg';
 	tr_img02.src='img/tr02.jpg';
-	
+
 	grass01.src='img/grass01.jpg';
-	select01.src='img/select01.jpg';
+	stone01.src='img/stone01.jpg';
+	dirt01.src='img/dirt01.jpg';
+	select01.src='img/select01.png';
 	highlight.src='img/highlight.png';
 
 	$.when(
@@ -249,14 +529,43 @@ function draw_el (el) {
 
 // initialise al for game
 function init () {
-	pers = new o({
+	map = [
+				"############",
+				"#...###....#",
+				"#....#.....#",
+				"##.........#",
+				"###.......##",
+				"##......####",
+				"#....#.....#",
+				"#....#....##",
+				"##...##....#",
+				"##....##...#",
+				"##.........#",
+				"############"
+				];
+
+	ter_n_h = map[0].length;
+	ter_n_v = map.length;
+	Canvas_Height = ter_n_v*G_SQ, Canvas_Width = ter_n_h*G_SQ;
+
+	var dict = {
+		'#': {
+			name:"stone",
+			fPassability: 0},
+		'.': {
+			name: "dirt",
+			fPassability: 1
+		}
+	}
+
+	pers = new actor({
 		img: default_image,
 		ctx: ctx,
 		w: G_SQ,
 		h: G_SQ,
 		pos:{
-			x: 25,
-			y: 25,
+			x: G_SQ/2,
+			y: G_SQ/2,
 			z: 0
 		},
 		id: "pers"
@@ -272,6 +581,10 @@ function init () {
 	for (var i=0; i<ter_n_h; i++) {
 		ter[i] = [];
 		for(var j=0; j<ter_n_v; j++) {
+			var type = "grass";
+			var passability = -1;
+			type = dict[map[i][j]].name || "grass";
+			passability = (dict[map[i][j]].fPassability!=undefined)?dict[map[i][j]].fPassability:0;
 			ter[i][j] = new terrSq({
 				img: grass01,
 				ctx: ctx,
@@ -282,17 +595,20 @@ function init () {
 				visible: true,
 				opacity: 0,
 				pos:{
-					x: G_SQ*i + 25,
-					y: G_SQ*j + 25
+					x: G_SQ*i + G_SQ/2,
+					y: G_SQ*j + G_SQ/2
 				},
 				coord:{
 					x: i,
 					y: j
 				},
 				stat: "normal",
+				type: type,
+				fPassability: passability,
 				images: {
-					normal: grass01,
-					highlight: highlight
+					grass: grass01,
+					stone: stone01,
+					dirt: dirt01
 				}
 			});
 		}
@@ -304,6 +620,7 @@ function start () {
 	create_gamezone();
 	create_canvas();
 	init();
+	resize_canvas();
 	draw();
 }
 function draw() {
@@ -321,10 +638,10 @@ function draw() {
 
 				//ter[i][j].moveToAim();
 				ter[i][j].fadeIn();
-				ter[i][j].stat = "highlight";
+				ter[i][j].fHighlight = true;
 				//ter[i][j].visible = true;
 				} else {
-					ter[i][j].stat = "normal";
+					ter[i][j].fHighlight = false;
 				}
 		ter[i][j].draw();
 		}
@@ -339,7 +656,8 @@ function act() {
 		requestAnimationFrame(act);
 	}
 	var now = new Date();
-	console.log(calculateFps(now));
+	calculateFps(now);
+	//console.log(calculateFps(now));
 	draw();
 }
 function game_pause()
@@ -405,6 +723,18 @@ $(document).ready(function(){
 	  var X = Math.floor(relativeX/G_SQ);
 	  var Y = Math.floor(relativeY/G_SQ);
 	  console.log("X: " + X + "  Y: " + Y);
+
+		if (terEnabled) {
+		  if (terSelected.X==X && terSelected.Y==Y) {
+		  	pers.moveToCoord({x:X, y:Y});
+		  	terSelected.X=-1;
+			  terSelected.Y=-1;
+			  terEnabled=false;
+		  } else if(ter[X][Y].fPassability) {
+			  terSelected.X=X;
+			  terSelected.Y=Y;
+			}
+		}
 	});
 
 
