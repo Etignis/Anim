@@ -232,7 +232,7 @@ class o {
 
 	calculateAccessability(p1, array) {
 		//var NULL = "null";
-		function setCoast(x,y,accessCoast) {
+		function setCoast(y,x,accessCoast) {
 			var ret = false;
 			var passable=0;
 			try {
@@ -301,6 +301,7 @@ class o {
 			//a[i] = []
 			for (var j=0; j<array[0].length; j++) {
 				array[i][j].accessCoast = NULL;
+				array[i][j].accessStat = null;
 			}
 		}
 		/**/
@@ -311,7 +312,7 @@ class o {
 		//var coast=0;
 		var fCont = true;
 		var i, j;
-		array[p1.x][p1.y].accessCoast=0;
+		//array[p1.x][p1.y].accessCoast=0;
 
 		function collectCoordinatesFromLine(start, end) {
 		  var directionType = start.x === end.x ? "vertical" : "horizontal";
