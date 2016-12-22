@@ -1,5 +1,6 @@
 "use strict";
 // CONSTANT
+var NULL = null;
 var G_SQ = 64; // global square size
 var map;
 
@@ -45,16 +46,16 @@ class o {
 		this.aim_y=p.aim_y?p.aim_y:null;
 
 		this.defaultSpeed = p.defaultSpeed?p.defaultSpeed:10;
-		this.pos = {
-			x: p.pos?p.pos.x?p.pos.x:0:0,
-			y: p.pos?p.pos.y?p.pos.y:0:0,
-			z: p.pos?p.pos.z?p.pos.z:0:0
-		}
 
 		this.coord = {
 			x: p.coord?p.coord.x?p.coord.x:0:0,
 			y: p.coord?p.coord.y?p.coord.y:0:0,
 			z: p.coord?p.coord.z?p.coord.z:0:0
+		}
+		this.pos = {
+			x: p.pos?p.pos.x?p.pos.x:0: this.coord.x*this.w + this.w/2,
+			y: p.pos?p.pos.y?p.pos.y:0: this.coord.y*this.h + this.h/2,
+			z: p.pos?p.pos.z?p.pos.z:0:0
 		}
 
 		if(p.visible != undefined){
@@ -67,8 +68,15 @@ class o {
 		} else {
 			this.opacity = 1;
 		}
+
+		this._moveToCoordEnd = Function.prototype;
   } /// constructor
 
+  setMoveToCoordEnd(fn) {
+  	if (typeof fn === 'function') {
+  		this._moveToCoordEnd = fn;
+  	}
+  }
   setCoord(p){
   	if(p.x!=undefined) {
   		this.coord.x=p.x;
@@ -91,12 +99,8 @@ class o {
   	if(p.z!=undefined) {
   		this.coord.z=p.z;
   	}
-  //	this.replaceByCoord();
-
-
 		var that = this;
-		this.timermoveToCoord = new Promise(function(res,rej) {
-			setInterval(
+		this.timermoveToCoord =	setInterval(
 				function() {
 					var rX = that.pos.x;
 					var rY = that.pos.y;
@@ -114,14 +118,14 @@ class o {
 					} else {
 						that.replaceByCoord();
 						terEnabled = true;
-						res();
+						//res();
 						clearInterval(that.timermoveToCoord);
+						that._moveToCoordEnd();
 					}
 				},
 			10
 			);
-		});
-		this.timermoveToCoord.then(function(){});
+		//this.timermoveToCoord.then(function(){});
   }
 	/*
 	set stat(value) {
@@ -164,6 +168,10 @@ class o {
 	replaceByCoord(){
 		this.pos.x = this.coord.x*this.w + this.w/2;
 		this.pos.y = this.coord.y*this.h + this.h/2;
+	}
+	replaceByPos(){
+		this.coord.x = Math.floor(this.pos.x/this.w);
+		this.coord.y = Math.floor(this.pos.y/this.h);
 	}
 	move(dir) {
 		switch(dir) {
@@ -221,6 +229,155 @@ class o {
 			}
 		}
 	};
+
+	calculateAccessability(p1, array) {
+		//var NULL = "null";
+		function setCoast(x,y,accessCoast) {
+			var ret = false;
+			var passable=0;
+			try {
+				if(array[x][y].fPassability && array[x][y].accessCoast!=NULL){
+					var accessCoast = array[x][y].accessCoast;
+					//console.log("try p "+x+" "+y +" "+accessCoast);
+					accessCoast++;
+
+					try {
+						var tx=x;
+						var ty=y-1;
+						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
+							array[ty][tx].accessCoast = accessCoast;
+						//console.log("top "+tx+" "+ty+" "+accessCoast);
+						//printA();
+						if (array[ty][tx].accessStat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+					try {
+						var tx=x;
+						var ty=+y+ +1;
+						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
+							array[ty][tx].accessCoast = accessCoast;
+						//console.log("bot "+tx+" "+ty+" "+accessCoast);
+						//printA();
+						if (array[ty][tx].accessStat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+					try {
+						var tx=x-1;
+						var ty=y;
+						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
+							array[ty][tx].accessCoast = accessCoast;
+						//console.log("left "+tx+" "+ty+" "+accessCoast);
+						//printA();
+						if (array[ty][tx].accessStat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+					try {
+						var tx=+x+ +1;
+						var ty=y;
+						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
+							array[ty][tx].accessCoast = accessCoast;
+						//console.log("right "+tx+" "+ty+" "+accessCoast);
+						//printA();
+						if (array[ty][tx].accessStat=="end")
+							ret = true;
+						}
+					} catch(err) {}
+
+				}
+			} catch(err) {}
+
+			return ret;
+		}
+
+		//var a = []; // create empty aray for coasts
+		/**/
+		for (var i=0; i<array.length; i++) {
+			//a[i] = []
+			for (var j=0; j<array[0].length; j++) {
+				array[i][j].accessCoast = NULL;
+			}
+		}
+		/**/
+		array[p1.y][p1.x].accessStat = 'start';
+		array[p1.y][p1.x].accessCoast = 0;
+		//printA();
+
+		//var coast=0;
+		var fCont = true;
+		var i, j;
+		array[p1.x][p1.y].accessCoast=0;
+
+		function collectCoordinatesFromLine(start, end) {
+		  var directionType = start.x === end.x ? "vertical" : "horizontal";
+		  var directionIncrement = directionType === "vertical" ? (start.y > end.y ? -1 : 1) : (start.x > end.x ? -1 : 1);
+		  var lineLength = directionType === "vertical" ? Math.abs(start.y - end.y) : Math.abs(start.x - end.x);
+		  var coordinates = [];
+		  var increment = directionIncrement;
+
+		  for (var i = 0; i < lineLength; i++) {
+		    var x = directionType === "vertical" ? start.x : start.x + increment;
+		    var y = directionType === "vertical" ? start.y + increment : start.y;
+
+		    coordinates.push({x: x, y: y});
+
+		    increment += directionIncrement;
+		  }
+
+		  return coordinates;
+		}
+
+		function gatherCoordinatesFromPerimeter(center, radius) {
+		  var currentPosition = {
+		    x: center.x + radius,
+		    y: center.y + radius
+		  };
+		  var coordinates = [];
+
+		  for (var side = 1; side <= 4; side++) {
+		    var multiplier = side <= 2 ? -1 : 1;
+		    var x = currentPosition.x + multiplier * 2 * radius * (side % 2);
+		    var y = currentPosition.y + multiplier * 2 * radius * ((side + 1) % 2);
+		    coordinates = coordinates.concat(collectCoordinatesFromLine(currentPosition, {x: x, y: y}));
+		    currentPosition = {x: x, y: y};
+		  }
+
+		  return coordinates;
+		}
+		for (var t=0; t<3 && fCont; t++) {
+			var ring = gatherCoordinatesFromPerimeter({x: p1.x, y:p1.y}, t);
+			if(t==0)
+				ring = [{x:p1.x, y:p1.y}];
+			for( var i=0; i<ring.length && fCont; i++) {
+				if( setCoast(ring[i].x, ring[i].y) ){
+							fCont=false;
+							console.log("Coasts for field set");
+						}
+			}
+		}
+
+		/**/
+		for (var i=0; i<array.length; i++) {
+			var str = "";
+			//a[i] = []
+			for (var j=0; j<array[0].length; j++) {
+				//array[i][j].accessCoast = NULL;
+				str = str+" "+((array[i][j].accessCoast==NULL)?0:array[i][j].accessCoast);
+			}
+			console.log(str);
+		}
+		/**/
+		//this.accessableField = a;
+	} /// calculateAccessability
+
+	highlightAccessableField(maxCoast) {
+
+	}
 };
 
 class terrSq extends o {
@@ -228,6 +385,7 @@ class terrSq extends o {
 		super(p);
 		//console.log(p.type);
 		this.fPassability = (p.fPassability!=undefined)?p.fPassability:1;
+		this.accessCoast = p.accessCoast?p.accessCoast:NULL;
 		this.type = p.type?p.type:0;
 		this.images = p.images?p.images:{};
 	}
@@ -242,12 +400,19 @@ class terrSq extends o {
 			super.draw({img: select01});
 		}
 	}
+
+	highlight(p) {
+
+	}
 }
 class actor extends o {
 	constructor(p) {
 		super(p);
 	}
 
+	findAccessability() {
+		this.calculateAccessability({x: this.coord.x, y: this.coord.y}, ter);
+	}
 	findPath(p1,p2) {
 		var NULL = 9;
 		function setCoast(x,y,coast) {
@@ -265,7 +430,7 @@ class actor extends o {
 						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
 							a[ty][tx].coast = coast;
 						console.log("top "+tx+" "+ty+" "+coast);
-						printA();
+						//printA();
 						if (a[ty][tx].stat=="end")
 							ret = true;
 						}
@@ -277,7 +442,7 @@ class actor extends o {
 						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
 							a[ty][tx].coast = coast;
 						console.log("bot "+tx+" "+ty+" "+coast);
-						printA();
+						//printA();
 						if (a[ty][tx].stat=="end")
 							ret = true;
 						}
@@ -289,7 +454,7 @@ class actor extends o {
 						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
 							a[ty][tx].coast = coast;
 						console.log("left "+tx+" "+ty+" "+coast);
-						printA();
+						//printA();
 						if (a[ty][tx].stat=="end")
 							ret = true;
 						}
@@ -301,7 +466,7 @@ class actor extends o {
 						if (a[ty][tx].coast==NULL && a[ty][tx].passable>passable) {
 							a[ty][tx].coast = coast;
 						console.log("right "+tx+" "+ty+" "+coast);
-						printA();
+						//printA();
 						if (a[ty][tx].stat=="end")
 							ret = true;
 						}
@@ -330,7 +495,7 @@ class actor extends o {
 				}
 			}
 		}
-		printA();
+		//printA();
 
 		var coast=0;
 		var fCont = true;
@@ -437,7 +602,7 @@ class actor extends o {
 
 		/**/
 		for(var i=0; path[i]; i++) {
-			//ter[path[i].x][path[i].y].type="grass";
+			ter[path[i].x][path[i].y].type="grass";
 
 		}
 		/**/
@@ -448,6 +613,9 @@ class actor extends o {
 		if (p!=undefined && p.length>0) {
 			this.pathPoints = p;
 		}
+	}
+	calculateState() {
+
 	}
 }
 // FUNCTIONS
@@ -558,18 +726,6 @@ function init () {
 		}
 	}
 
-	pers = new actor({
-		img: default_image,
-		ctx: ctx,
-		w: G_SQ,
-		h: G_SQ,
-		pos:{
-			x: G_SQ/2,
-			y: G_SQ/2,
-			z: 0
-		},
-		id: "pers"
-	});
 	/*
 	tr01 = new terrSq({
 		img: tr_img01,
@@ -578,6 +734,7 @@ function init () {
 		h: G_SQ
 	});
 	*/
+	var pX=0, pY=0;
 	for (var i=0; i<ter_n_h; i++) {
 		ter[i] = [];
 		for(var j=0; j<ter_n_v; j++) {
@@ -585,6 +742,10 @@ function init () {
 			var passability = -1;
 			type = dict[map[i][j]].name || "grass";
 			passability = (dict[map[i][j]].fPassability!=undefined)?dict[map[i][j]].fPassability:0;
+			if(pX==0 && pY==0 && passability>0) {
+				pX=j;
+				pY=i;
+			}
 			ter[i][j] = new terrSq({
 				img: grass01,
 				ctx: ctx,
@@ -605,6 +766,7 @@ function init () {
 				stat: "normal",
 				type: type,
 				fPassability: passability,
+				accessCoast: NULL,
 				images: {
 					grass: grass01,
 					stone: stone01,
@@ -613,6 +775,22 @@ function init () {
 			});
 		}
 	}
+
+	pers = new actor({
+		img: default_image,
+		ctx: ctx,
+		w: G_SQ,
+		h: G_SQ,
+		coord: {
+			x: pX,
+			y: pY
+		},
+		id: "pers"
+	});
+
+	pers.setMoveToCoordEnd(() => {
+		console.log("I moved to: "+pers.coord.x+" "+pers.coord.y);
+	})
 	//pers.img = default_image;
 	//pers.ctx = ctx;
 }
@@ -625,6 +803,7 @@ function start () {
 }
 function draw() {
 	ctx.clearRect(0, 0, Canvas_Width, Canvas_Height);
+	pers.calculateAccessability({x: pers.coord.x, y: pers.coord.y}, ter);
 	for (var i=0; i<ter_n_h; i++) {
 		for(var j=0; j<ter_n_v; j++) {
 			if(
@@ -632,21 +811,32 @@ function draw() {
 				Math.abs(pers.pos.x-ter[i][j].aim_x) < 61 &&
 				Math.abs(pers.pos.y-ter[i][j].aim_y) < 61
 				/**/
+				/**/
 				Math.abs(pers.coord.x-ter[i][j].coord.x) <= 1 &&
 				Math.abs(pers.coord.y-ter[i][j].coord.y) <= 1
+				/**/
+
 				) {
 
 				//ter[i][j].moveToAim();
 				ter[i][j].fadeIn();
-				ter[i][j].fHighlight = true;
+				//ter[i][j].fHighlight = true;
 				//ter[i][j].visible = true;
 				} else {
-					ter[i][j].fHighlight = false;
+					//ter[i][j].fHighlight = false;
 				}
+			if (ter[i][j].accessCoast>0 && ter[i][j].accessCoast<5) {
+				ter[i][j].fHighlight = true;
+				ter[i][j].fadeIn();
+			} else {
+				ter[i][j].fHighlight = false;
+			}
+		ter[2][5].type="grass";
 		ter[i][j].draw();
 		}
 	}
 	//tr01.draw({repeat_x:5, repeat_y:5});
+	//pers.putState(ter);
 	pers.draw();
 	drawFPS(fps);
 }
@@ -722,7 +912,7 @@ $(document).ready(function(){
 	  //alert("X: " + relativeX + "  Y: " + relativeY);
 	  var X = Math.floor(relativeX/G_SQ);
 	  var Y = Math.floor(relativeY/G_SQ);
-	  console.log("X: " + X + "  Y: " + Y);
+	  //console.log("X: " + X + "  Y: " + Y);
 
 		if (terEnabled) {
 		  if (terSelected.X==X && terSelected.Y==Y) {
