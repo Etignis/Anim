@@ -2,6 +2,7 @@
 // CONSTANT
 var NULL = null;
 var G_SQ = 64; // global square size
+var MaxAccessCoast = 4;
 var map;
 
 var ter_n_h = 10, ter_n_v = 10;
@@ -77,6 +78,9 @@ class o {
   		this._moveToCoordEnd = fn;
   	}
   }
+  coordToPos(v){
+  	return v * G_SQ + G_SQ/2;
+  }
   setCoord(p){
   	if(p.x!=undefined) {
   		this.coord.x=p.x;
@@ -134,6 +138,7 @@ class o {
 	}
 	*/
 	draw(p) {
+
 		var w = this.w?this.w:this.img.width;
 		var h = this.h?this.h:this.img.height;
 		var x = this.pos.x - this.w/2;
@@ -232,20 +237,22 @@ class o {
 
 	calculateAccessability(p1, array) {
 		//var NULL = "null";
-		function setCoast(y,x,accessCoast) {
+		var that = this;
+		function setCoast(i,j,accessCoast) {
 			var ret = false;
 			var passable=0;
 			try {
-				if(array[x][y].fPassability && array[x][y].accessCoast!=NULL){
-					var accessCoast = array[x][y].accessCoast;
+				if(array[j][i].fPassability && array[j][i].accessCoast!=NULL){
+					var accessCoast = array[j][i].accessCoast;
 					//console.log("try p "+x+" "+y +" "+accessCoast);
 					accessCoast++;
 
-					try {
-						var tx=x;
-						var ty=y-1;
+					try { // TOP
+						var tx=i;
+						var ty=j-1;
 						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
 							array[ty][tx].accessCoast = accessCoast;
+							that.highlightAccessableField(array[ty][tx], ty, tx);
 						//console.log("top "+tx+" "+ty+" "+accessCoast);
 						//printA();
 						if (array[ty][tx].accessStat=="end")
@@ -253,11 +260,12 @@ class o {
 						}
 					} catch(err) {}
 
-					try {
-						var tx=x;
-						var ty=+y+ +1;
+					try { // BOTTOM
+						var tx=i;
+						var ty=+j+ +1;
 						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
 							array[ty][tx].accessCoast = accessCoast;
+							that.highlightAccessableField(array[ty][tx], ty, tx);
 						//console.log("bot "+tx+" "+ty+" "+accessCoast);
 						//printA();
 						if (array[ty][tx].accessStat=="end")
@@ -265,11 +273,12 @@ class o {
 						}
 					} catch(err) {}
 
-					try {
-						var tx=x-1;
-						var ty=y;
+					try { // LEFT
+						var tx=i-1;
+						var ty=j;
 						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
 							array[ty][tx].accessCoast = accessCoast;
+							that.highlightAccessableField(array[ty][tx], ty, tx);
 						//console.log("left "+tx+" "+ty+" "+accessCoast);
 						//printA();
 						if (array[ty][tx].accessStat=="end")
@@ -277,11 +286,12 @@ class o {
 						}
 					} catch(err) {}
 
-					try {
-						var tx=+x+ +1;
-						var ty=y;
+					try { //RIGHT
+						var tx=+i+ +1;
+						var ty=j;
 						if (array[ty][tx].accessCoast==NULL && array[ty][tx].fPassability>passable) {
 							array[ty][tx].accessCoast = accessCoast;
+							that.highlightAccessableField(array[ty][tx], ty, tx);
 						//console.log("right "+tx+" "+ty+" "+accessCoast);
 						//printA();
 						if (array[ty][tx].accessStat=="end")
@@ -300,6 +310,7 @@ class o {
 		for (var i=0; i<array.length; i++) {
 			//a[i] = []
 			for (var j=0; j<array[0].length; j++) {
+				array[i][j].fHighlight = false;
 				array[i][j].accessCoast = NULL;
 				array[i][j].accessStat = null;
 			}
@@ -363,6 +374,7 @@ class o {
 		}
 
 		/**/
+		//console.log("-");
 		for (var i=0; i<array.length; i++) {
 			var str = "";
 			//a[i] = []
@@ -370,14 +382,19 @@ class o {
 				//array[i][j].accessCoast = NULL;
 				str = str+" "+((array[i][j].accessCoast==NULL)?0:array[i][j].accessCoast);
 			}
-			console.log(str);
+			//console.log(str);
 		}
 		/**/
 		//this.accessableField = a;
 	} /// calculateAccessability
 
-	highlightAccessableField(maxCoast) {
-
+	highlightAccessableField(o, i, j) {/**/
+		if (o.fPassability>0 && o.accessCoast != NULL && o.accessCoast <= MaxAccessCoast) {
+			o.fHighlight = true;
+			//console.log("highlight "+i+" "+j);
+		} else {
+			o.fHighlight = false;
+		}/**/
 	}
 };
 
@@ -392,18 +409,20 @@ class terrSq extends o {
 	}
 
 	draw(p) {
+		/*/
+		if(this.coord.x==1 && this.coord.y==3)
+			debugger;
+		/**/
 		//super(p);
 		super.draw({img: this.images[this.type]});
-		if (this.fHighlight && this.fPassability>0) {
+
+		if (this.fHighlight && this.fPassability != NULL) {
 			super.draw({img: highlight});
 		}
-		if (this.coord.x == terSelected.X &&  this.coord.y == terSelected.Y && this.fHighlight>0) {
+		ter[1][3].type = "grass";
+		if (this.coord.x == terSelected.X && this.coord.y == terSelected.Y) {
 			super.draw({img: select01});
 		}
-	}
-
-	highlight(p) {
-
 	}
 }
 class actor extends o {
@@ -700,16 +719,16 @@ function draw_el (el) {
 function init () {
 	map = [
 				"############",
-				"#...###....#",
+				"#....#..##.#",
+				"####.#.....#",
+				"#..#.###.#.#",
+				"##.#.#...#.#",
+				"##.....#####",
+				"###...##.#.#",
+				"#.##...#.#.#",
+				"#..#...#...#",
+				"#..#.#.###.#",
 				"#....#.....#",
-				"##.........#",
-				"###.......##",
-				"##......####",
-				"#....#.....#",
-				"#....#....##",
-				"##...##....#",
-				"##....##...#",
-				"##.........#",
 				"############"
 				];
 
@@ -720,29 +739,24 @@ function init () {
 	var dict = {
 		'#': {
 			name:"stone",
-			fPassability: 0},
+			fPassability: 0
+		},
 		'.': {
 			name: "dirt",
 			fPassability: 1
 		}
 	}
 
-	/*
-	tr01 = new terrSq({
-		img: tr_img01,
-		ctx: ctx,
-		w: G_SQ,
-		h: G_SQ
-	});
-	*/
 	var pX=0, pY=0;
 	for (var i=0; i<ter_n_h; i++) {
 		ter[i] = [];
 		for(var j=0; j<ter_n_v; j++) {
 			var type = "grass";
 			var passability = -1;
-			type = dict[map[i][j]].name || "grass";
-			passability = (dict[map[i][j]].fPassability!=undefined)?dict[map[i][j]].fPassability:0;
+			var deshifr = dict[map[i][j]];
+			type = deshifr.name || "grass";
+			passability = (deshifr.fPassability!=undefined)? deshifr.fPassability : 0;
+			// for pers placement
 			if(pX==0 && pY==0 && passability>0) {
 				pX=j;
 				pY=i;
@@ -756,13 +770,9 @@ function init () {
 				aim_y: G_SQ*j,
 				visible: true,
 				opacity: 0,
-				pos:{
-					x: G_SQ*i + G_SQ/2,
-					y: G_SQ*j + G_SQ/2
-				},
 				coord:{
-					x: i,
-					y: j
+					x: j,
+					y: i
 				},
 				stat: "normal",
 				type: type,
@@ -805,39 +815,23 @@ function start () {
 function draw() {
 	ctx.clearRect(0, 0, Canvas_Width, Canvas_Height);
 	pers.calculateAccessability({x: pers.coord.x, y: pers.coord.y}, ter);
-	for (var i=0; i<ter_n_h; i++) {
-		for(var j=0; j<ter_n_v; j++) {
+	for (var i=0; i<ter_n_v; i++) {
+		for(var j=0; j<ter_n_h; j++) {
 			if(
-				/*/
-				Math.abs(pers.pos.x-ter[i][j].aim_x) < 61 &&
-				Math.abs(pers.pos.y-ter[i][j].aim_y) < 61
-				/**/
-				/**/
-				Math.abs(pers.coord.x-ter[i][j].coord.x) <= 1 &&
-				Math.abs(pers.coord.y-ter[i][j].coord.y) <= 1
-				/**/
-
+				Math.abs(pers.coord.x - ter[i][j].coord.x) <= 1 &&
+				Math.abs(pers.coord.y - ter[i][j].coord.y) <= 1
 				) {
 
-				//ter[i][j].moveToAim();
 				ter[i][j].fadeIn();
-				//ter[i][j].fHighlight = true;
-				//ter[i][j].visible = true;
 				} else {
-					//ter[i][j].fHighlight = false;
 				}
 			if (ter[i][j].accessCoast>0 && ter[i][j].accessCoast<5) {
-				ter[i][j].fHighlight = true;
 				ter[i][j].fadeIn();
 			} else {
-				ter[i][j].fHighlight = false;
 			}
-		ter[2][5].type="grass";
 		ter[i][j].draw();
 		}
 	}
-	//tr01.draw({repeat_x:5, repeat_y:5});
-	//pers.putState(ter);
 	pers.draw();
 	drawFPS(fps);
 }
@@ -913,15 +907,15 @@ $(document).ready(function(){
 	  //alert("X: " + relativeX + "  Y: " + relativeY);
 	  var X = Math.floor(relativeX/G_SQ);
 	  var Y = Math.floor(relativeY/G_SQ);
-	  //console.log("X: " + X + "  Y: " + Y);
+	  console.log("X: " + X + "  Y: " + Y);
 
-		if (terEnabled) {
+		if (terEnabled && ter[Y][X].fHighlight) {
 		  if (terSelected.X==X && terSelected.Y==Y) {
 		  	pers.moveToCoord({x:X, y:Y});
 		  	terSelected.X=-1;
 			  terSelected.Y=-1;
 			  terEnabled=false;
-		  } else if(ter[X][Y].fPassability) {
+		  } else if(ter[Y][X].fPassability) {
 			  terSelected.X=X;
 			  terSelected.Y=Y;
 			}
