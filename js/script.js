@@ -361,7 +361,7 @@ class o {
 
 		  return coordinates;
 		}
-		for (var t=0; t<3 && fCont; t++) {
+		for (var t=0; t<4 && fCont; t++) {
 			var ring = gatherCoordinatesFromPerimeter({x: p1.x, y:p1.y}, t);
 			if(t==0)
 				ring = [{x:p1.x, y:p1.y}];
@@ -374,7 +374,7 @@ class o {
 		}
 
 		/**/
-		//console.log("-");
+		console.log("-");
 		for (var i=0; i<array.length; i++) {
 			var str = "";
 			//a[i] = []
@@ -382,7 +382,7 @@ class o {
 				//array[i][j].accessCoast = NULL;
 				str = str+" "+((array[i][j].accessCoast==NULL)?0:array[i][j].accessCoast);
 			}
-			//console.log(str);
+			console.log(str);
 		}
 		/**/
 		//this.accessableField = a;
