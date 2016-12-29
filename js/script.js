@@ -701,25 +701,27 @@ function draw_el (el) {
 function create_map (w, h) {
 	var arr = [];
 		arr[0] = arr[h-1]= "";
-	var str = [];
+	var str = [0];
 	maxCarrots=0;
-	for (var i=0; i<w; i+=1) {
+	for (var i=0; i<w-1; i+=1) {
 		//str.push((i%2)?".":"#");
 		str.push(Math.floor(i/2));
-		arr[0] = arr[0]+"##";
-		arr[h-1] = arr[h-1]+"##";
+		//arr[0] = arr[0]+"#";
+		//arr[h-1] = arr[h-1]+"#";
 	}
 
 	var f = 1;
-	for (var i=1; i<h-2; i++) {
+	for (var i=0; i<h-1; i++) {
 		if(f > 0) {
 			arr[i] = [].concat(str);
 			arr[i+1] = [].concat(str);
-			for (var j=1; j<w-1; j+=1) {
-				if (!(j%2)) {
+			for (var j=0; j<w-1; j+=1) {
+				var rnd = randd(10,90);
+				rnd = rnd%3;
+				if (j%2 == 0 && rnd==0) {
 					arr[i][j] = "#";
 				} else {
-					arr[i][j] = arr[i][j-1];
+					arr[i][j] = (arr[i][j-2]!=undefined && arr[i][j-1] != '#' && arr[i][j-2] != '#')?arr[i][j-2]:arr[i][j];
 				}
 				arr[i+1][j] = arr[i][j];
 			}
@@ -733,7 +735,7 @@ function create_map (w, h) {
 				} else {
 					pe=ps+pl;
 					hs = randd(ps, pe-1);
-					he = randd(0, pe-hs);
+					he = randd(hs, pe-1);
 					for (var t=hs; t<=he; t++) {
 						arr[i][t]=".";
 					}
@@ -741,8 +743,15 @@ function create_map (w, h) {
 					pl=0;
 				}
 			}
+
+			arr[i-1]=arr[i-1].join("");
+			arr[i]=arr[i].join("");
 		}
 		f*=-1;
+	}
+
+	for (var i =0; i<h; i++){
+		arr[i]=arr[i].replace(/[0-9]/gi, ".");
 	}
 
 	/*/
@@ -781,7 +790,7 @@ function create_map (w, h) {
 }
 // initialise al for game
 function init () {
-	var ar1 = create_map(12,12);
+	var ar1 = create_map(19,19);
 	map = [
 				"############",
 				"#.,,@#.@##.#",
@@ -796,7 +805,7 @@ function init () {
 				"#....#.,,,.#",
 				"############"
 				];
-	map = ar1;
+	//map = ar1;
 
 	ter_n_h = map[0].length;
 	ter_n_v = map.length;
