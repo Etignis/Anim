@@ -45,7 +45,9 @@ var lastAnimationFrameTime,
 		min_deltaTime,
 		lastFpsUpdateTime=0;
 
-
+function inRad(num) {
+	return num * Math.PI / 180;
+}
 // Objects
 class o {
 	constructor(p) {
@@ -59,7 +61,7 @@ class o {
 		this.aim_x=p.aim_x?p.aim_x:null;
 		this.aim_y=p.aim_y?p.aim_y:null;
 
-		this.defaultSpeed = p.defaultSpeed?p.defaultSpeed:5;
+		this.defaultSpeed = p.defaultSpeed?p.defaultSpeed:300;
 
 		this.coord = {
 			x: p.coord?p.coord.x?p.coord.x:0:0,
@@ -127,10 +129,12 @@ class o {
 					var deltaY = aY - rY;
 					if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
 						if(Math.abs(deltaX) > 5) {
-							that.pos.x = +that.pos.x + +getSign(deltaX)*that.defaultSpeed;
+							var k = (Math.abs(deltaX) > 20)? 1: 0.5;
+							that.pos.x = +that.pos.x + +getSign(deltaX)*that.defaultSpeed * deltaTime*k;
 						}
 						if (Math.abs(deltaY) > 5) {
-							that.pos.y = +that.pos.y + +getSign(deltaY)*that.defaultSpeed;
+							var k = (Math.abs(deltaY)> 20)? 1: 0.5;
+							that.pos.y = +that.pos.y + +getSign(deltaY)*that.defaultSpeed * deltaTime*k;
 						}
 					} else {
 						that.replaceByCoord();
@@ -142,14 +146,8 @@ class o {
 				},
 			10
 			);
-		//this.timermoveToCoord.then(function(){});
   }
-	/*
-	set stat(value) {
-		console.log(value);
-		console.log(this.stat);
-	}
-	*/
+
 	draw(p) {
 
 		var w = this.w?this.w:this.img.width;
@@ -170,6 +168,7 @@ class o {
 			if(p.img)
 				IMG = p.img;
 		}
+
 		if(this.ctx && IMG && this.visible) {
 			for (var i = 0; i<r_x; i++ ) {
 				for (var j = 0; j<r_y; j++ ) {
@@ -178,7 +177,26 @@ class o {
 					} else {
 						ctx.globalAlpha = 1;
 					}
-					this.ctx.drawImage(IMG, x + w*i, y + h*j, w, h);
+					if(p && p.rotate>0) {
+							ctx.translate(x+w/2, y+h/2);
+							ctx.rotate(inRad(p.rotate));
+							this.ctx.drawImage(IMG, -w/2, -h/2, w, h);
+							ctx.rotate(inRad(-p.rotate));
+							ctx.translate(-(x+w/2),-(y+h/2));
+					} else{
+						/**/
+						ctx.translate(0, 0);
+						ctx.rotate(inRad(0));
+						this.ctx.drawImage(IMG, x + w*i, y + h*j, w, h);
+						/**/
+						/*/
+						ctx.translate(x, y);
+						ctx.rotate(inRad(90));
+						this.ctx.drawImage(IMG, 0, 0, w, h);
+						ctx.rotate(inRad(-90));
+						ctx.translate(-x,-y);
+						/**/
+					}
 				}
 			}
 		}
@@ -235,7 +253,8 @@ class o {
 				this.pos.x = this.aim_x;
 				this.aim_x = null;
 			} else {
-				this.pos.x = delta_x>0? this.pos.x - this.defaultSpeed * deltaTime: +this.pos.x+ +this.defaultSpeed * deltaTime;
+				var k = (delta_x > this.defaultSpeed*2)? 1: 0.5;
+				this.pos.x = delta_x>0? this.pos.x - this.defaultSpeed * deltaTime*k: +this.pos.x+ +this.defaultSpeed * deltaTime*k;
 			}
 		}
 		if(this.aim_y) {
@@ -244,7 +263,8 @@ class o {
 				this.pos.y = this.aim_y;
 				this.aim_y = null;
 			} else {
-				this.pos.y = delta_y>0? this.pos.y - this.defaultSpeed * deltaTime : +this.pos.y+ +this.defaultSpeed * deltaTime;
+				var k = (delta_x > this.defaultSpeed*2)? 1: 0.5;
+				this.pos.y = delta_y>0? this.pos.y - this.defaultSpeed * deltaTime*k : +this.pos.y+ +this.defaultSpeed * deltaTime*k;
 			}
 		}
 	}
@@ -496,17 +516,21 @@ class terrSq extends o {
 		this.accessCoast = p.accessCoast?p.accessCoast:NULL;
 		this.type = p.type?p.type:0;
 		this.images = p.images?p.images:[];
+		this.shade = p.shade? p.shade : 0;
 	}
 
 	showNeighbor (j,i) {
 		var n,m;
+		var that = this;
 		function toggle(a,b) {
 			try {
-			if(ter[a][b].visible != true){
-				//ter[a][b].fadeIn();
-				ter[a][b].visible = true;
-			}
-		} catch (err) {}
+				if(ter[a][b].opacity == 0){
+					ter[a][b].fadeIn();
+
+					//ter[a][b].visible = true;
+					//ter[a][b].opacity = 1;
+				}
+			} catch (err) {}
 		}
 		n = i-1;
 		m = j-1;
@@ -534,11 +558,47 @@ class terrSq extends o {
 		toggle(n,m)
 	}
 
+	dark (j,i) {
+		var n,m;
+		function toggle(a,b) {
+			try {
+				if (ter[a][b].visible != true || ter[a][b].opacity==0)
+					//ter[i][j].shade = 1;
+					return 1;
+				else
+					//ter[i][j].shade = 0;
+				return 0;
+			} catch (err) {
+				//ter[i][j].shade = 1;
+				return 1;
+			}
+		}
+		var sum =0;
+		n = i-1;
+		m = j;
+		sum+=toggle(n,m)
+		n = i;
+		m = j-1;
+		sum+=toggle(n,m)
+		n = i;
+		m = j+1;
+		sum+=toggle(n,m)
+		n = i+1;
+		m = j;
+		sum+=toggle(n,m)
+		if(sum>0){
+			ter[i][j].shade = 1;
+		} else {
+			ter[i][j].shade = 0;
+		}
+	}
+
 	draw(p) {
 		super.draw({img: this.images[this.type].img});
-		this.showNeighbor(this.coord.x, this.coord.y);
+		//
 
 		if (this.fHighlight && this.fPassability != NULL) {
+			this.showNeighbor(this.coord.x, this.coord.y);
 			super.draw({img: highlight});
 		}
 		if (this.coord.x == terSelected.X && this.coord.y == terSelected.Y) {
@@ -548,6 +608,13 @@ class terrSq extends o {
 			if (this.coord.x == pers.path[i].x && this.coord.y == pers.path[i].y) {
 				super.draw({img: step});
 			}
+		}
+		if(this.visible == true || this.opacity>0) {
+			this.dark(this.coord.x, this.coord.y);
+		}
+
+		if (this.shade==1) {
+			super.draw({img: dark01, rotate: this.images.shade01.rotate});
 		}
 	}
 }
@@ -896,7 +963,7 @@ function init () {
 				h: G_SQ,
 				aim_x: G_SQ*i,
 				aim_y: G_SQ*j,
-				visible: true,
+				visible: false,
 				opacity: 0,
 				coord:{
 					x: j,
@@ -926,6 +993,10 @@ function init () {
 						carrot: {
 							img: carrot01,
 							rotate: 0
+						},
+						shade01: {
+							img: dark01,
+							rotate: 90
 						}
 					}
 			});
