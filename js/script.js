@@ -25,6 +25,10 @@ var dirt02 = new Image();
 var carrot01 = new Image();
 var select01 = new Image();
 var highlight = new Image();
+var step = new Image();
+var dark01 = new Image();
+var dark02 = new Image();
+var dark03 = new Image();
 var c_bg;
 
 var maxCarrots = 4;
@@ -208,6 +212,7 @@ class o {
 	fadeIn() {
 		if(this.opacity < 1 && !this.timerFadeIn) {
 			var that = this;
+			this.visible = true;
 			this.timerFadeIn = setInterval(
 				function() {
 					var delta = 1 - that.opacity;
@@ -490,23 +495,59 @@ class terrSq extends o {
 		this.fPassability = (p.fPassability!=undefined)?p.fPassability:1;
 		this.accessCoast = p.accessCoast?p.accessCoast:NULL;
 		this.type = p.type?p.type:0;
-		this.images = p.images?p.images:{};
+		this.images = p.images?p.images:[];
+	}
+
+	showNeighbor (j,i) {
+		var n,m;
+		function toggle(a,b) {
+			try {
+			if(ter[a][b].visible != true){
+				//ter[a][b].fadeIn();
+				ter[a][b].visible = true;
+			}
+		} catch (err) {}
+		}
+		n = i-1;
+		m = j-1;
+		toggle(n,m)
+		n = i-1;
+		m = j;
+		toggle(n,m)
+		n = i-1;
+		m = j+1;
+		toggle(n,m)
+		n = i;
+		m = j-1;
+		toggle(n,m)
+		n = i;
+		m = j+1;
+		toggle(n,m)
+		n = i+1;
+		m = j-1;
+		toggle(n,m)
+		n = i+1;
+		m = j;
+		toggle(n,m)
+		n = i+1;
+		m = j+1;
+		toggle(n,m)
 	}
 
 	draw(p) {
-		/*/
-		if(this.coord.x==1 && this.coord.y==3)
-			debugger;
-		/**/
-		//super(p);
-		super.draw({img: this.images[this.type]});
+		super.draw({img: this.images[this.type].img});
+		this.showNeighbor(this.coord.x, this.coord.y);
 
 		if (this.fHighlight && this.fPassability != NULL) {
 			super.draw({img: highlight});
 		}
-		//ter[1][3].type = "grass";
 		if (this.coord.x == terSelected.X && this.coord.y == terSelected.Y) {
 			super.draw({img: select01});
+		}
+		for (var i in pers.path){ // show path
+			if (this.coord.x == pers.path[i].x && this.coord.y == pers.path[i].y) {
+				super.draw({img: step});
+			}
 		}
 	}
 }
@@ -578,13 +619,7 @@ class actor extends o {
 		console.log("path: " + path);
 		this.path = path;
 	}
-	/*/
-	makePath(p){
-		if (p!=undefined && p.length>0) {
-			this.pathPoints = p;
-		}
-	}
-	/**/
+
 	followPath(array) {
 		var that = this;
 		function reStep() {
@@ -673,7 +708,7 @@ function resize_canvas() {
 
 // load game resources // images
 function load_resources () {
-	default_image.src='img/defaut.jpg';
+	default_image.src='img/defaut.png';
 	tr_img01.src='img/tr01.jpg';
 	tr_img02.src='img/tr02.jpg';
 
@@ -684,6 +719,10 @@ function load_resources () {
 	carrot01.src='img/carrot01.jpg';
 	select01.src='img/select01.png';
 	highlight.src='img/highlight.png';
+	step.src='img/step_point.png';
+	dark01.src =  'img/dark_01.png';
+	dark02.src =  'img/dark_02.png';
+	dark03.src =  'img/dark_03.png';
 
 	$.when(
 		default_image.onload,
@@ -868,12 +907,27 @@ function init () {
 				fPassability: passability,
 				accessCoast: NULL,
 				images: {
-					grass: grass01,
-					stone: stone01,
-					dirt: dirt01,
-					dirt2: dirt02,
-					carrot: carrot01
-				}
+						grass: {
+							img: grass01,
+							rotate: 0
+						},
+						stone: {
+							img: stone01,
+							rotate: 0
+						},
+						dirt: {
+							img: dirt01,
+							rotate: 0
+						},
+						dirt2: {
+							img: dirt02,
+							rotate: 0
+						},
+						carrot: {
+							img: carrot01,
+							rotate: 0
+						}
+					}
 			});
 		}
 	}
@@ -913,7 +967,6 @@ function draw() {
 				Math.abs(pers.coord.x - ter[i][j].coord.x) <= 1 &&
 				Math.abs(pers.coord.y - ter[i][j].coord.y) <= 1
 				) {
-
 				ter[i][j].fadeIn();
 				} else {
 				}
@@ -1003,8 +1056,6 @@ $(document).ready(function(){
 
 		if (terEnabled && ter[Y][X].fHighlight) {
 		  if (terSelected.X==X && terSelected.Y==Y) {
-		  	pers.calculateAccessability({x: pers.coord.x, y: pers.coord.y}, ter);
-		  	pers.findPath({x:X, y:Y}, ter);
 		  	pers.followPath(ter);
 		  	//pers.moveToCoord({x:X, y:Y});
 		  	terSelected.X=-1;
@@ -1013,6 +1064,8 @@ $(document).ready(function(){
 		  } else if(ter[Y][X].fPassability) {
 			  terSelected.X=X;
 			  terSelected.Y=Y;
+		  	pers.calculateAccessability({x: pers.coord.x, y: pers.coord.y}, ter);
+		  	pers.findPath({x:X, y:Y}, ter);
 			}
 		}
 	});
