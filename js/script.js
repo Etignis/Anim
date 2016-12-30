@@ -996,7 +996,7 @@ function init () {
 						},
 						shade01: {
 							img: dark01,
-							rotate: 90
+							rotate: 0
 						}
 					}
 			});
