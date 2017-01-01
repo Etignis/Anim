@@ -563,34 +563,142 @@ class terrSq extends o {
 		function toggle(a,b) {
 			try {
 				if (ter[a][b].visible != true || ter[a][b].opacity==0)
-					//ter[i][j].shade = 1;
 					return 1;
 				else
-					//ter[i][j].shade = 0;
-				return 0;
+					return 0;
 			} catch (err) {
-				//ter[i][j].shade = 1;
 				return 1;
 			}
 		}
-		var sum =0;
+		var sum = "";
+		/**/
+		n = i-1;
+		m = j-1;
+		sum+=""+toggle(n,m)
 		n = i-1;
 		m = j;
-		sum+=toggle(n,m)
+		sum+=""+toggle(n,m)
+		n = i-1;
+		m = j+1;
+		sum+=""+toggle(n,m)
 		n = i;
 		m = j-1;
-		sum+=toggle(n,m)
+		sum+=""+toggle(n,m)
 		n = i;
 		m = j+1;
-		sum+=toggle(n,m)
+		sum+=""+toggle(n,m)
+		n = i+1;
+		m = j-1;
+		sum+=""+toggle(n,m)
 		n = i+1;
 		m = j;
-		sum+=toggle(n,m)
+		sum+=""+toggle(n,m)
+		n = i+1;
+		m = j+1;
+		sum+=""+toggle(n,m)
+		//console.log(sum);
+		/**/
+		ter[i][j].shade = 0;
+		/**/
+		if(i==0 && j==8)
+			debugger;
+		/**/
+		switch (sum) {
+			case "10000000":
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark03;
+				ter[i][j].images.shade.rotate = "0";
+				break;
+			case "11010000":
+			case "11010100":
+			case "11110100":
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark02;
+				ter[i][j].images.shade.rotate = "0";
+				break;
+			case "11000000":  
+			case "11100000":  
+			case "01100000":  
+			case "01000000":  
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark01;
+				ter[i][j].images.shade.rotate = "0";
+				break;
+			case "00100000": 
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark03;
+				ter[i][j].images.shade.rotate = "90";
+				break;
+			case "01101000":
+			case "01001000":
+			case "11101001":
+			case "01101001":
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark02;
+				ter[i][j].images.shade.rotate = "90";
+				break;
+			case "00101001":
+			case "00001001":
+			case "00101000": 
+			case "00001000": 
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark01;
+				ter[i][j].images.shade.rotate = "90";
+				break;
+			case "00000001": 
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark03;
+				ter[i][j].images.shade.rotate = "180";
+				break;
+			case "11010000":
+			case "00101111":
+			case "11110100":
+			case "00101011":
+			case "00001011":
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark02;
+				ter[i][j].images.shade.rotate = "180";
+				break;
+			case "00000111": 
+			case "00000011": 
+			case "00000110": 
+			case "00000010": 
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark01;
+				ter[i][j].images.shade.rotate = "180";
+				break;
+			case "00000100": 
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark03;
+				ter[i][j].images.shade.rotate = "270";
+				break;
+			case "11010000":
+			case "10010110":
+			case "10010111":
+			case "00010110":
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark02;
+				ter[i][j].images.shade.rotate = "270";
+				break;
+			case "10010100": 
+			case "00010100": 
+			case "10010000": 
+			case "00010000": 
+				ter[i][j].shade = 1;
+				ter[i][j].images.shade.img = dark01;
+				ter[i][j].images.shade.rotate = "270";
+				break;
+			
+			default: 
+				ter[i][j].shade = 0;
+		}
+		/*/
 		if(sum>0){
 			ter[i][j].shade = 1;
 		} else {
 			ter[i][j].shade = 0;
 		}
+		/**/
 	}
 
 	draw(p) {
@@ -614,7 +722,7 @@ class terrSq extends o {
 		}
 
 		if (this.shade==1) {
-			super.draw({img: dark01, rotate: this.images.shade01.rotate});
+			super.draw({img: this.images.shade.img, rotate: this.images.shade.rotate});
 		}
 	}
 }
@@ -776,14 +884,12 @@ function resize_canvas() {
 // load game resources // images
 function load_resources () {
 	default_image.src='img/defaut.png';
-	tr_img01.src='img/tr01.jpg';
-	tr_img02.src='img/tr02.jpg';
 
 	grass01.src='img/grass01.jpg';
 	stone01.src='img/stone01.jpg';
 	dirt01.src='img/dirt01.jpg';
 	dirt02.src='img/dirt02.jpg';
-	carrot01.src='img/carrot01.jpg';
+	carrot01.src='img/carrot02.png';
 	select01.src='img/select01.png';
 	highlight.src='img/highlight.png';
 	step.src='img/step_point.png';
@@ -994,7 +1100,7 @@ function init () {
 							img: carrot01,
 							rotate: 0
 						},
-						shade01: {
+						shade: {
 							img: dark01,
 							rotate: 0
 						}
